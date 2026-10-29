@@ -1,0 +1,16 @@
+{
+ "lm_model": "acestep-5Hz-lm-0.6B-Q8_0.gguf",
+ "synth_model": "acestep-v15-sft-Q8_0.gguf",
+ "caption": "Soft acoustic bedroom pop love song, intimate and dreamy. Fingerpicked ukulele and warm nylon-string acoustic guitar, gentle close-mic young male tenor vocal, breathy and sweet, airy falsetto on the hook, soft layered harmonies in the chorus, laid-back brushed drums and finger snaps from the first chorus, round soft bass, subtle clean electric guitar licks, faint vinyl warmth, tender, nostalgic, romantic, lo-fi indie, clean modern mix",
+ "lyrics": "[Intro - fingerpicked ukulele, soft humming]\n\n[Verse 1]\nSix a.m. on a northbound train\nYour name still written on my hand\nThe city's waking in the rain\nAnd I'm still learning how to stand\n\n[Verse 2]\nI saved the last song that you played\nIt's looping softly in my head\nYour laugh is all I couldn't trade\nFor every word we never said\n\n[Pre-Chorus]\nAnd the fields roll by like pages\nOf a book I'll never close\n\n[Chorus]\nOh, I keep the window seat for you\nIn case you change your mind\nI count the stations, one, two\nAnd leave the world behind\nEvery little town looks just like you\nGolden in the light\nSo I keep the window seat for you\nTonight\n\n[Verse 3]\nYou said that love's a paper boat\nIt only floats if both believe\nI folded every note you wrote\nAnd kept them tucked inside my sleeve\n\n[Pre-Chorus]\nAnd the sky turns into amber\nLike the sweater that you stole\n\n[Chorus]\nOh, I keep the window seat for you\nIn case you change your mind\nI count the stations, one, two\nAnd leave the world behind\nEvery little town looks just like you\nGolden in the light\nSo I keep the window seat for you\nTonight\n\n[Bridge - stripped back, soft falsetto]\nIf the tracks lead back to you\nI'll be waiting at the start\nWith a ticket and a tune\nAnd a window in my heart\n\n[Final Chorus - full band, harmonies]\nOh, I keep the window seat for you\nIn case you change your mind\nI count the stations, one, two\nAnd leave the world behind\nEvery little town looks just like you\nGolden in the light\nSo I keep the window seat for you\nTonight\n\n[Outro - ukulele fades, humming]\nMm, the window seat for you",
+ "duration": 200,
+ "bpm": 88,
+ "vocal_language": "en",
+ "keyscale": "D major",
+ "timesignature": "4",
+ "inference_steps": 50,
+ "guidance_scale": 1.0,
+ "shift": 1.0,
+ "lm_batch_size": 2,
+ "output_format": "wav24"
+}

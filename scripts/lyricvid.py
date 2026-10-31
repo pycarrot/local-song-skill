@@ -1,7 +1,11 @@
 # Render a karaoke lyric video from word timings (w2lines.py output).
-# Usage: TITLE="song name" [TOP=b5a0de BOTTOM=5c488c] lyricvid.py <lines.json> <audio> <out.mp4> [seconds]
+# Usage: TITLE="song name" [TOP=b5a0de BOTTOM=5c488c] [FONT=path.ttf] lyricvid.py <lines.json> <audio> <out.mp4> [seconds]
 import os, sys, json, subprocess, numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+if sys.platform == "darwin" and not os.environ.get("LYRICVID_ENV"):  # Pillow finds Homebrew's fribidi (Thai shaping) only via this var
+    os.environ.update(LYRICVID_ENV="1", DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:/usr/lib")
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, features
+if not features.check("raqm"): print("note: no text shaping (install fribidi); Thai/Arabic marks may be misplaced", file=sys.stderr)
 src, audio, out = sys.argv[1:4]
 W, H, FPS = 1280, 720, 24
 d = json.load(open(src))
@@ -12,15 +16,23 @@ lines = [{"t0": l["start"] / 1000, "t1": l["end"] / 1000, "words": [(w["start"] 
 for a, b in zip(lines, lines[1:] + [None]):  # hold each line until the next starts (max +2.5s)
     a["hold"] = min(b["t0"], a["t1"] + 2.5) if b else a["t1"] + 3
 
+text = os.environ.get("TITLE", "") + "".join(w for l in lines for _, w in l["words"])
+thai = any("฀" <= c <= "๿" for c in text)
+wide = not thai and any(c.isalpha() and ord(c) >= 0x370 for c in text)  # CJK, Hangul, Cyrillic, Arabic…: Avenir has no glyphs
+
 def F(size, w="Medium"):
-    try:  # macOS
-        return ImageFont.truetype("/System/Library/Fonts/Avenir Next.ttc", size, index={"Medium": 5, "Bold": 0, "UltraLight": 8}[w])
+    if os.environ.get("FONT"): return ImageFont.truetype(os.environ["FONT"], size)
+    try:  # macOS; Avenir has no Thai glyphs
+        if thai: return ImageFont.truetype("/System/Library/Fonts/Supplemental/SukhumvitSet.ttc", size, index={"Medium": 3, "Bold": 5, "Heavy": 5}[w])
+        if wide: return ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Unicode.ttf", size)  # one weight only
+        return ImageFont.truetype("/System/Library/Fonts/Avenir Next.ttc", size, index={"Medium": 5, "Bold": 0, "Heavy": 8}[w])
     except OSError:
-        for f in ("DejaVuSans-Bold.ttf" if w == "Bold" else "DejaVuSans.ttf", "Arial.ttf", "arial.ttf"):
+        th = ("NotoSansThai-Bold.ttf" if w == "Bold" else "NotoSansThai-Regular.ttf",) if thai else ()
+        for f in th + ("DejaVuSans-Bold.ttf" if w == "Bold" else "DejaVuSans.ttf", "Arial.ttf", "arial.ttf"):
             try: return ImageFont.truetype(f, size)
             except OSError: pass
         return ImageFont.load_default(size)
-big, small, title, sub = F(54, "Bold"), F(30), F(110, "UltraLight"), F(26)
+big, small, title, sub = F(54, "Bold"), F(30), F(110, "Heavy"), F(26)
 
 # background: two-colour gradient (default lavender) + slow drifting soft light blobs, computed small then upscaled
 gy, gx = np.mgrid[0:90, 0:160].astype(np.float32)
@@ -42,7 +54,11 @@ def draw_line(layer, ln, t, y, font, alpha, karaoke):
     dr = ImageDraw.Draw(layer)
     words = [w for _, w in ln["words"]]; sp = dr.textlength(" ", font=font)
     widths = [dr.textlength(w, font=font) for w in words]
-    x = (W - sum(widths) - sp * (len(words) - 1)) / 2
+    total = sum(widths) + sp * (len(words) - 1)
+    if total > W - 80:  # too wide for the frame: shrink rather than cut off both ends
+        font = font.font_variant(size=int(font.size * (W - 80) / total)); sp = dr.textlength(" ", font=font)
+        widths = [dr.textlength(w, font=font) for w in words]; total = sum(widths) + sp * (len(words) - 1)
+    x = (W - total) / 2
     for (ws, w), wd in zip(ln["words"], widths):
         lit = ease((t - ws) / 0.18) if karaoke else 0
         a = int(alpha * (110 + 145 * lit))

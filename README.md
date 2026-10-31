@@ -28,16 +28,20 @@ plus Homebrew (or git, cmake, ffmpeg, uv and whisper.cpp already installed).
 |---|---|---|
 | Compose (lyrics + caption → melody, structure as audio codes) | ACE-Step 1.5 LM 0.6B | `generate.sh` |
 | Render audio | ACE-Step 1.5 DiT: **hq** = SFT 50 steps, **fast** = turbo 8 steps, lossless 24-bit WAV | `generate.sh` |
-| Check sung lyrics | whisper.cpp small | `check_lyrics.sh` |
+| Check sung lyrics, score each take against the lyric | whisper.cpp small (or any whisper model via `WHISPER_MODEL`) | `check_lyrics.sh`, `score_take.py` |
 | Vocal clean-up: separate → de-reverb → presence/air EQ, de-ess, compress → remix | audio-separator (MelBand-Roformer, UVR DeEcho-DeReverb) + ffmpeg | `polish.sh` |
-| Master (-14 LUFS, -1 dBTP, 320 kbps) | ffmpeg loudnorm, two-pass | `polish.sh` |
-| Karaoke lyric video, 720p | Pillow + ffmpeg | `w2lines.py`, `lyricvid.py` |
+| Master (-14 LUFS, -1.5 dBTP before the MP3 encode, 320 kbps) | ffmpeg loudnorm, two-pass | `polish.sh` |
+| Karaoke lyric video, 720p: your lyric lines, timed word by word (whisper DTW timestamps aligned to the lyric), Thai and other complex scripts shaped via fribidi (on Linux, non-Thai scripts need `FONT=…`) | Pillow + ffmpeg | `w2lines.py`, `lyricvid.py` |
 
 Rough times on an M4 Mac with 16 GB: compose about 30 s; render about 2 min per take (fast) or about 4 min per take (hq); polish about 3 min.
 
 **Why polish?** Raw diffusion vocals often sound hazy: a reverb wash and smeared highs.
 `polish.sh` pulls the vocal out, strips the wash, adds presence (around 3 kHz) and air (9 kHz+), tames sibilance, and makes room for it in the backing track.
 The 24-bit output and the SFT model also help: the default 128 kbps MP3 from the renderer audibly dulls the top end.
+
+**Languages.** English comes out clearest. ACE-Step accepts about 50 languages; others are less clear.
+For Thai, the skill keeps your Thai lyrics for composing and the video. It has the model sing a romanized copy with stronger guidance (hq install only).
+On the test song, Whisper heard 68–84% of the lines this way, against under 10% from the Thai script.
 
 `examples/window-seat/` holds the request and lyrics for the demo song.
 

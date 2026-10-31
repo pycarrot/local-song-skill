@@ -5,7 +5,7 @@ set -euo pipefail
 quality=${1:-hq}
 LS_HOME=${LS_HOME:-$HOME/.local-song}
 ACESTEP_REF=${ACESTEP_REF:-de858d8}   # last tested acestep.cpp commit
-LM=${LM:-0.6B}                        # 0.6B | 1.7B (better lyrics/structure, +1.1 GB)
+LM=${LM:-0.6B}                        # 0.6B | 1.7B (better lyrics/structure, +1.3 GB)
 HF=https://huggingface.co/Serveurperso/ACE-Step-1.5-GGUF/resolve/main
 case $quality in hq) dit=acestep-v15-sft-Q8_0.gguf ;; fast) dit=acestep-v15-turbo-Q8_0.gguf ;;
   *) echo "usage: setup.sh [hq|fast]"; exit 1 ;; esac
@@ -26,6 +26,8 @@ if [ ${#need[@]} -gt 0 ]; then
     echo "Missing: ${need[*]}. Install them (whisper-cli comes from whisper.cpp), then re-run."; exit 1
   fi
 fi
+# fribidi lets Pillow shape Thai/Arabic/Hindi text in lyric videos (otherwise tone marks land in the wrong place)
+if command -v brew >/dev/null && ! brew list fribidi >/dev/null 2>&1; then brew install -q fribidi; fi
 
 A=$LS_HOME/acestep.cpp
 if [ ! -x "$A/build/ace-synth" ]; then

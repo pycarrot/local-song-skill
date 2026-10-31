@@ -20,15 +20,22 @@ r = json.load(open(sys.argv[1])); models = os.listdir(sys.argv[3])
 if "synth_model" not in r or r["synth_model"] not in models:
     sft = "acestep-v15-sft-Q8_0.gguf" in models
     r.update(synth_model="acestep-v15-sft-Q8_0.gguf" if sft else "acestep-v15-turbo-Q8_0.gguf",
-             inference_steps=50 if sft else 8, guidance_scale=1.0, shift=1.0 if sft else 3.0)
+             inference_steps=50 if sft else 8, guidance_scale=r.get("guidance_scale", 1.0) if sft else 1.0,  # turbo is distilled: 1.0 only
+             shift=1.0 if sft else 3.0)
 if "lm_model" not in r or r["lm_model"] not in models:
     r["lm_model"] = sorted(m for m in models if m.startswith("acestep-5Hz-lm"))[-1]
 r.setdefault("output_format", "wav24"); r.setdefault("lm_batch_size", 2)
 json.dump(r, open(sys.argv[2], "w"), indent=1)
-print("synth:", r["synth_model"], r["inference_steps"], "steps · lm:", r["lm_model"])
+print("synth:", r["synth_model"], r.get("inference_steps", "auto"), "steps · cfg", r.get("guidance_scale", 1.0), "· lm:", r["lm_model"])
 EOF
 cd "$out"
 echo "composing (LM)…"
 "$A/build/ace-lm" --models "$A/models" --request req.json >lm.log 2>&1 || { tail -20 lm.log; exit 1; }
+# synth_lyrics (e.g. a romanization of Thai lyrics) is sung instead of lyrics; the LM still composed from the real ones
+python3 -c "
+import json, glob
+s = json.load(open('req.json')).get('synth_lyrics')
+for p in glob.glob('req[0-9].json') if s else []:
+    r = json.load(open(p)); r['lyrics'] = s; json.dump(r, open(p, 'w'), ensure_ascii=False, indent=1)"
 for r in req[0-9].json; do echo "rendering $r…"; synth "$r"; done
 ls -1 "$PWD"/req[0-9]0.*

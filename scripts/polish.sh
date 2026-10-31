@@ -32,10 +32,10 @@ gain=$(awk -v a="$(lufs "$work/vox.wav")" -v b="$(lufs "$work/vshaped.wav")" -v 
 echo "4/4 remixing + mastering (vocal ${boost} dB louder)"
 ffmpeg -v error -y -i "$work/vshaped.wav" -i "$work/inst.wav" -filter_complex \
   "[0]volume=${gain}dB[v];[1]equalizer=f=3000:t=q:w=0.8:g=-2[i];[v][i]amix=inputs=2:normalize=0" "$work/mix.wav"
-# two-pass loudnorm: measure first, then normalise linearly to exactly -14 LUFS
-m=$(ffmpeg -hide_banner -nostats -i "$work/mix.wav" -af loudnorm=I=-14:TP=-1:LRA=9:print_format=json -f null - 2>&1 |
+# two-pass loudnorm: measure first, then normalise linearly to exactly -14 LUFS (TP -1.5: the MP3/AAC encode overshoots by ~0.3 dB)
+m=$(ffmpeg -hide_banner -nostats -i "$work/mix.wav" -af loudnorm=I=-14:TP=-1.5:LRA=9:print_format=json -f null - 2>&1 |
     awk -F'"' '/input_i/{i=$4}/input_tp/{t=$4}/input_lra/{l=$4}/input_thresh/{h=$4}/target_offset/{o=$4}
       END{printf "measured_I=%s:measured_TP=%s:measured_LRA=%s:measured_thresh=%s:offset=%s",i,t,l,h,o}')
-ffmpeg -v error -y -i "$work/mix.wav" -af "loudnorm=I=-14:TP=-1:LRA=9:$m:linear=true${fade:+,afade=t=out:st=$fade:d=6}" \
+ffmpeg -v error -y -i "$work/mix.wav" -af "loudnorm=I=-14:TP=-1.5:LRA=9:$m:linear=true${fade:+,afade=t=out:st=$fade:d=6}" \
   -ar 44100 -b:a 320k "$out"
 echo "done: $out ($(lufs "$out") LUFS)"

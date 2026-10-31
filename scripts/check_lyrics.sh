@@ -16,7 +16,9 @@ case $(whisper-cli --help 2>&1) in *--no-flash-attn*) nfa=-nfa;; *) nfa=;; esac 
 case $dtw in tiny|tiny.en|base|base.en|small|small.en|medium|medium.en|large.v1|large.v2|large.v3|large.v3.turbo) dtw="$nfa -dtw $dtw";; *) dtw="";; esac  # unknown model name: no DTW
 rm -f "$in.whisper.json"  # never leave an older transcript to be mistaken for this one
 # -mc 0: no previous text as context, which stops repeat loops over unclear vocals (same scores on clear English songs)
-whisper-cli -m "$model" -f "$tmp" -l "$lang" -mc 0 -ojf -of "$in.whisper" -np $dtw >/dev/null 2>"$base.log" || { cat "$base.log" >&2; exit 1; }
+whisper-cli -m "$model" -f "$tmp" -l "$lang" -mc 0 -ojf -of "$in.whisper" -np $dtw >/dev/null 2>"$base.log" ||
+  { [ -n "$dtw" ] && echo "whisper-cli failed with DTW on (it can abort with 'filter_width < a->ne[2]'); retrying without, so word timings are coarser" >&2 &&
+    whisper-cli -m "$model" -f "$tmp" -l "$lang" -mc 0 -ojf -of "$in.whisper" -np >/dev/null 2>"$base.log"; } || { cat "$base.log" >&2; exit 1; }
 [ -s "$in.whisper.json" ] || { echo "whisper-cli wrote no transcript:" >&2; cat "$base.log" >&2; exit 1; }
 python3 -c "
 import json, sys
